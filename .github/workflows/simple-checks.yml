@@ -1,0 +1,119 @@
+name: Simple Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  config-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Validate YAML files
+        run: |
+          echo "Validating GitHub Actions workflows..."
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            if [ -f "$file" ]; then
+              echo "Checking $file"
+              python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+            fi
+          done
+
+      - name: Validate Claude Code configuration
+        run: |
+          echo "Validating Claude Code agents and commands..."
+          # Check agent frontmatter
+          for file in .claude/agents/*.md; do
+            if [ -f "$file" ]; then
+              echo "Checking agent: $file"
+              head -20 "$file" | grep -E "^(name|description|tools|color):" > /dev/null || {
+                echo "Missing required frontmatter in $file"
+                exit 1
+              }
+            fi
+          done
+          
+          # Check command files exist and are readable
+          for file in .claude/commands/*.md; do
+            if [ -f "$file" ]; then
+              echo "Checking command: $file"
+              [ -r "$file" ] || {
+                echo "Command file not readable: $file"
+                exit 1
+              }
+            fi
+          done
+
+      - name: Validate ADR structure
+        run: |
+          echo "Validating ADR structure..."
+          if [ -d ".adrs" ]; then
+            # Check template exists
+            [ -f ".adrs/template.md" ] || {
+              echo "ADR template missing"
+              exit 1
+            }
+            
+            # Check README exists
+            [ -f ".adrs/README.md" ] || {
+              echo "ADR README missing"  
+              exit 1
+            }
+            
+            # Validate ADR files format
+            for file in .adrs/adr-*.md; do
+              if [ -f "$file" ]; then
+                echo "Checking ADR: $file"
+                grep -q "^# ADR-" "$file" || {
+                  echo "Invalid ADR format in $file"
+                  exit 1
+                }
+                grep -q "^## Status" "$file" || {
+                  echo "Missing Status section in $file"
+                  exit 1
+                }
+              fi
+            done
+          fi
+
+      - name: Check shell script syntax
+        run: |
+          echo "Checking shell scripts..."
+          for file in $(find . -name "*.sh" -type f); do
+            echo "Checking $file"
+            bash -n "$file" || exit 1
+          done
+
+      - name: Validate learning directory structure  
+        run: |
+          echo "Validating learning directory structure..."
+          if [ -d "thoughts/shared/learnings" ]; then
+            echo "✅ Learning directory exists"
+            [ -f "thoughts/shared/learnings/README.md" ] && echo "✅ Learning README exists"
+          else
+            echo "⚠️ Learning directory not yet created (will be created by hooks)"
+          fi
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
+      - name: Lint Markdown files
+        run: |
+          markdownlint --ignore node_modules --ignore .git --config .markdownlint.json . || true
+          echo "Markdown linting completed (warnings only)"
