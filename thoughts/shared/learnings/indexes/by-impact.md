@@ -5,12 +5,15 @@ This index categorizes learnings by their organizational impact level for priori
 ## High Impact (Organizational)
 *Learnings that affect entire organization or multiple teams*
 
-- *No high-impact learnings captured yet*
+- **Compound Learning Synthesis Framework** (2025-09-03): 4-criteria optimization approach (Correctness, Completeness, Size, Trajectory) enables systematic workflow improvement
+- **Workflow Performance Gap Pattern** (2025-09-03): Compound-enhanced workflows (100% success) significantly outperform basic workflows (0-43% success)
 
 ## Medium Impact (Team/Project)  
 *Learnings that affect current team or project outcomes*
 
-- *No medium-impact learnings captured yet*
+- **Learning Infrastructure Utilization Gap** (2025-09-03): Complete infrastructure exists but requires activation of learning commands in workflows
+- **Cross-Workflow Context Sharing Need** (2025-09-03): Individual workflows operate in silos, limiting compound learning effect
+- **Tool Usage Logging Success** (2025-09-03): PostToolUse hook captures 166+ operations effectively, providing rich data for pattern analysis
 
 ## Low Impact (Individual/Local)
 *Learnings that improve individual productivity or local workflows*

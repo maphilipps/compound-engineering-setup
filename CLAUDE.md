@@ -44,12 +44,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## AI Evaluation Framework
 
+### 4-Criteria Compound Learning Optimization
+*Last synthesis: September 3, 2025*
+
+✅ **Correctness**: Ensure logical soundness and error prevention
+✅ **Completeness**: Address all requirements thoroughly  
+✅ **Size**: Provide appropriately sized solutions (not over/under-engineered)
+✅ **Trajectory**: Contribute to compound learning and knowledge building
+
+#### Compound Workflow Success Pattern
+- **Key Finding**: Workflows with compound learning integration show 100% success rates vs 0-43% for basic workflows
+- **Application**: Always include learning capture commands (`/capture_learning`, `/learn_from_failure`, `/adr_check`) in AI workflows
+- **Evidence**: Claude Compound Code Review (100% success) vs Claude Code Review (43% success)
+
 ### Code Quality Checklist
 - [ ] Follows established patterns from codebase
 - [ ] Includes appropriate error handling
 - [ ] Has clear variable naming and structure
 - [ ] Integrates properly with existing architecture
 - [ ] Includes necessary tests and documentation
+- [ ] **Uses learning capture commands when appropriate**
+- [ ] **References existing learnings and ADRs when relevant**
 
 ### Decision Documentation Standards
 - Document WHY not just WHAT in all code changes
