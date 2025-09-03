@@ -2,7 +2,7 @@ name: Auto Fix CI Failures
 
 on:
   workflow_run:
-    workflows: ["Simple Checks", "Prevention Rule Validation"]
+    workflows: ["Main", "Prevention Rule Validation"]
     types:
       - completed
 

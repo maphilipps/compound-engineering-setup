@@ -27,23 +27,7 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Basic Prevention Rule Check
-        run: |
-          echo "🔍 Prevention Rule Validation"
-          echo "Repository: compound-engineering-setup (configuration repository)"
-          echo "Status: This is a configuration repository - prevention rules will be applied to actual code repositories"
-          echo "✅ Configuration files validated successfully"
-          echo "✅ Claude Code agents and commands structure validated"
-          echo "✅ ADR system properly configured"
-          echo "✅ Learning system framework in place"
-          echo ""
-          echo "Next steps:"
-          echo "- Prevention rules will activate when applied to code repositories"
-          echo "- This framework provides the foundation for systematic prevention"
-          echo "- Individual projects will benefit from these prevention standards"
-          
-      - name: Validate Prevention Framework Setup
-        if: false  # Disable complex validation for now
+      - name: Comprehensive Prevention Rule Validation
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
