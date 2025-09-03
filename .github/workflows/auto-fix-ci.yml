@@ -1,0 +1,239 @@
+name: Auto Fix CI Failures
+
+on:
+  workflow_run:
+    workflows: ["Main", "Claude Code Review", "Prevention Rule Validation"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+  id-token: write # Required for OIDC token exchange
+
+jobs:
+  auto-fix:
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.pull_requests[0] &&
+      !startsWith(github.event.workflow_run.head_branch, 'claude-auto-fix-ci-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup git identity
+        run: |
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          git config --global user.name "claude[bot]"
+
+      - name: Create fix branch
+        id: branch
+        run: |
+          BRANCH_NAME="claude-auto-fix-ci-${{ github.event.workflow_run.head_branch }}-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Get CI failure details
+        id: failure_details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const failedJobs = jobs.data.jobs.filter(job => job.conclusion === 'failure');
+
+            let errorSummary = [];
+            for (const job of failedJobs) {
+              // Get job steps with failures
+              const failedSteps = job.steps ? job.steps.filter(step => step.conclusion === 'failure') : [];
+              errorSummary.push({
+                jobName: job.name,
+                jobId: job.id,
+                failedSteps: failedSteps.map(step => ({
+                  name: step.name,
+                  conclusion: step.conclusion
+                })),
+                runnerOs: job.runner_name || 'ubuntu-latest'
+              });
+            }
+
+            return {
+              runUrl: run.data.html_url,
+              workflowName: run.data.name,
+              failedJobs: failedJobs.map(j => j.name),
+              errorSummary: errorSummary,
+              headSha: run.data.head_sha,
+              headBranch: run.data.head_branch
+            };
+
+      - name: Fix CI failures with Claude
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            ## Auto-Fix CI Failures
+
+            **Failed CI Run Details:**
+            - Run URL: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+            - Workflow: ${{ fromJSON(steps.failure_details.outputs.result).workflowName }}
+            - Failed Jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+            - PR Number: ${{ github.event.workflow_run.pull_requests[0].number }}
+            - Branch: ${{ github.event.workflow_run.head_branch }}
+            - Head SHA: ${{ fromJSON(steps.failure_details.outputs.result).headSha }}
+
+            **Error Summary:**
+            ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorSummary) }}
+
+            ## Your Task
+
+            1. **Analyze the CI failure** using the error details above
+            2. **Investigate the codebase** to understand the root cause
+            3. **Apply targeted fixes** to resolve the specific CI issues
+            4. **Test your fixes** where possible to validate the solution
+            5. **Commit the changes** with clear commit message explaining the fix
+
+            ## Focus Areas for Common CI Issues
+
+            ### Build/Dependency Issues
+            - Missing or incorrect dependencies in package.json, pyproject.toml, go.mod
+            - Lock file inconsistencies (package-lock.json, uv.lock, go.sum)
+            - Version conflicts or incompatible dependency versions
+
+            ### Test Failures
+            - Broken unit tests due to code changes
+            - Missing test fixtures or data files
+            - Environment-specific test issues
+
+            ### Linting/Type Issues
+            - ESLint, Prettier, or other code style violations
+            - TypeScript type errors or missing type definitions
+            - Python mypy, ruff, or similar linter failures
+
+            ### Configuration Issues
+            - Incorrect workflow configurations
+            - Missing environment variables or secrets
+            - Build tool configuration errors
+
+            ## Guidelines
+
+            - **Be surgical**: Only fix what's actually broken
+            - **Maintain compatibility**: Don't break existing functionality
+            - **Follow project conventions**: Use existing patterns and styles
+            - **Add tests if needed**: Ensure fixes are validated
+            - **Document significant changes**: Add comments for complex fixes
+
+            Use the allowed tools to investigate, fix, and validate your changes. The goal is to make the CI pass while maintaining code quality and project standards.
+
+          claude_args: '--allowed-tools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*),Bash(bun:*),Bash(uv:*),Bash(go:*),Bash(make:*),Bash(gh:*)"'
+
+      - name: Check for changes and create PR
+        if: success()
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes made, CI fix may not have been successful"
+            exit 0
+          fi
+
+          # Push the fix branch
+          git push origin ${{ steps.branch.outputs.branch_name }}
+
+          # Create PR with fix details
+          gh pr create \
+            --title "🤖 Auto-fix CI failures for ${{ github.event.workflow_run.head_branch }}" \
+            --body "## Auto-generated CI Fix
+
+          This PR contains automated fixes for CI failures in the original branch.
+
+          **Original CI Run:** ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+          **Failed Jobs:** ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+          **Base Branch:** ${{ github.event.workflow_run.head_branch }}
+
+          ### Changes Made
+          The Claude AI assistant analyzed the CI failures and applied targeted fixes. Please review the changes before merging.
+
+          ### Next Steps
+          1. Review the automated fixes
+          2. Test locally if needed
+          3. Merge this PR to apply fixes to the base branch
+          4. The original PR CI should then pass
+
+          🤖 Generated with [Claude Code](https://claude.ai/code)" \
+            --head "${{ steps.branch.outputs.branch_name }}" \
+            --base "${{ github.event.workflow_run.head_branch }}" \
+            --label "auto-fix,ci"
+
+      - name: Comment on original PR
+        if: success() && github.event.workflow_run.pull_requests[0]
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.workflow_run.pull_requests[0].number }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🤖 **Auto-Fix CI Failures**
+              
+              I noticed CI failures and created an automated fix branch: \`${{ steps.branch.outputs.branch_name }}\`
+              
+              **Failed Workflow:** ${{ fromJSON(steps.failure_details.outputs.result).workflowName }}
+              **Failed Jobs:** ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+              
+              A separate PR with the fixes will be created shortly. Once you merge the fix PR into this branch, the CI should pass.
+              
+              [View original failed run](${{ fromJSON(steps.failure_details.outputs.result).runUrl }})`
+            });
+
+  notify-on-error:
+    if: |
+      always() &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.pull_requests[0] &&
+      needs.auto-fix.result == 'failure'
+    needs: auto-fix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify about auto-fix failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.workflow_run.pull_requests[0].number }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `⚠️ **Auto-Fix CI Failures - Failed**
+              
+              I attempted to automatically fix the CI failures but was unable to complete the task.
+              
+              **Failed Workflow:** ${{ github.event.workflow_run.name }}
+              [View failed run](${{ github.event.workflow_run.html_url }})
+              
+              Please manually investigate and fix the CI issues. Common causes:
+              - Complex dependency conflicts requiring manual resolution
+              - Test failures requiring domain knowledge
+              - Configuration issues specific to the environment
+              - Permission or access issues
+              
+              You can check the auto-fix attempt logs in this workflow run.`
+            });
