@@ -1,0 +1,115 @@
+name: BackstopJS Visual Regression Tests - Test
+
+on:
+  # Bei jedem Push
+  push:
+  # Manueller Trigger
+  workflow_dispatch:
+
+jobs:
+  backstop-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install -g backstopjs
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends chromium-browser
+
+      - name: Create BackstopJS config if not exists
+        run: |
+          if [ ! -f "backstop.json" ]; then
+            cat > backstop.json << 'EOL'
+            {
+              "id": "venneker-test-regression",
+              "viewports": [
+                {
+                  "label": "phone",
+                  "width": 390,
+                  "height": 844
+                },
+                {
+                  "label": "tablet",
+                  "width": 768,
+                  "height": 1024
+                },
+                {
+                  "label": "desktop",
+                  "width": 1920,
+                  "height": 1080
+                }
+              ],
+              "onBeforeScript": "puppet/onBefore.js",
+              "onReadyScript": "puppet/onReady.js",
+              "scenarios": [
+                {
+                  "label": "Homepage",
+                  "url": "https://www-test.venneker-gruppe.de/",
+                  "delay": 1000,
+                  "requireSameDimensions": true
+                }
+              ],
+              "paths": {
+                "bitmaps_reference": "backstop_data/bitmaps_reference",
+                "bitmaps_test": "backstop_data/bitmaps_test",
+                "engine_scripts": "backstop_data/engine_scripts",
+                "html_report": "backstop_data/html_report",
+                "ci_report": "backstop_data/ci_report"
+              },
+              "report": ["browser"],
+              "engine": "puppeteer",
+              "engineOptions": {
+                "args": ["--no-sandbox"]
+              },
+              "asyncCaptureLimit": 5,
+              "asyncCompareLimit": 50,
+              "debug": false,
+              "debugWindow": false
+            }
+            EOL
+          fi
+
+      - name: Create reference if it doesn't exist
+        run: |
+          if [ ! -d "backstop_data/bitmaps_reference" ]; then
+            backstop reference
+          fi
+
+      - name: Run BackstopJS tests
+        run: |
+          backstop test
+        continue-on-error: true
+
+      - name: Setup Git for GitHub Pages
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone report repository
+        uses: actions/checkout@v3
+        with:
+          repository: venneker-gruppe/www-test-reports
+          path: deploy-repo
+          token: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: Copy reports to deployment directory
+        run: |
+          mkdir -p deploy-repo/backstop-reports/$(date +%Y-%m-%d)
+          cp -r backstop_data/html_report/* deploy-repo/backstop-reports/$(date +%Y-%m-%d)/
+          mkdir -p deploy-repo/backstop-reports/latest
+          cp -r backstop_data/html_report/* deploy-repo/backstop-reports/latest/
+
+      - name: Commit and push reports
+        working-directory: deploy-repo
+        run: |
+          git add .
+          git commit -m "Update BackstopJS report for www-test - $(date +%Y-%m-%d)"
+          git push

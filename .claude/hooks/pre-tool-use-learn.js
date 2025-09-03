@@ -26,7 +26,7 @@ function findClaudeDir() {
 
 try {
     const claudeDir = findClaudeDir();
-    const awFilePath = path.join(claudeDir, 'commands', 'aw.md');
+    const awFilePath = path.join(claudeDir, 'commands', 'learn.md');
 
     if (fs.existsSync(awFilePath)) {
         const content = fs.readFileSync(awFilePath, 'utf8');

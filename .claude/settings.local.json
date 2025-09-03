@@ -23,7 +23,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/pre-tool-use.js"
+            "command": "node .claude/hooks/pre-tool-use-aw.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-tool-use-learn.js"
           }
         ]
       }

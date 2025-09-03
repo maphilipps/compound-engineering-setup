@@ -1,0 +1,175 @@
+name: Claude Compound Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude-review-and-compound:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Git for Learning Extraction
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action - Compound Learning"
+
+      # First: Standard Code Review
+      - name: Initial Code Review
+        id: code-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Please perform a comprehensive code review of PR #${{ github.event.pull_request.number }} focusing on:
+
+            ## Primary Review Areas
+            - **Code Quality**: Best practices, patterns, maintainability
+            - **Security**: Vulnerabilities, attack vectors, data protection
+            - **Performance**: Bottlenecks, scalability, resource usage
+            - **Architecture**: Design decisions, integration points, long-term impact
+            - **Testing**: Coverage adequacy, edge cases, test quality
+
+            ## Enhanced Analysis Using New AI Standards
+            Use the new AI Evaluation Framework from CLAUDE.md:
+            
+            ### Code Quality Checklist
+            - [ ] Follows established patterns from codebase
+            - [ ] Includes appropriate error handling
+            - [ ] Has clear variable naming and structure
+            - [ ] Integrates properly with existing architecture
+            - [ ] Includes necessary tests and documentation
+
+            ### Multi-Phase Review Process
+            1. **Structural Review**: Architecture and patterns alignment
+            2. **Implementation Review**: Code quality and correctness assessment
+            3. **Integration Review**: System compatibility and dependencies
+            4. **Learning Review**: What insights can be extracted for future development
+
+            ## Opponent Processing
+            Also act as a critical opponent processor - challenge design decisions and identify potential issues:
+            - Question architectural choices and alternatives
+            - Identify over-engineering or under-engineering
+            - Find simpler or more robust approaches
+            - Highlight missing requirements or assumptions
+            - Assess deployment and integration risks
+
+            Use `gh pr comment` to post your comprehensive review as a PR comment.
+            
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+      # Second: Extract Learning Patterns (After Review)
+      - name: Extract Compound Learning Patterns
+        if: always() && steps.code-review.outcome == 'success'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Now that the initial review is complete, extract compound learning patterns from PR #${{ github.event.pull_request.number }} for organizational knowledge building:
+
+            ## Compound Learning Analysis (4-Criteria Optimization)
+            
+            ✅ **Correctness**: 
+            - What made this solution logically sound and bug-free?
+            - Which patterns prevented errors?
+            - What validation approaches worked?
+            
+            ✅ **Completeness**: 
+            - How were all requirements fully addressed?
+            - What comprehensive approaches were used?
+            - Which coverage strategies proved effective?
+            
+            ✅ **Size**: 
+            - Was the solution appropriately sized (not over/under-engineered)?
+            - What right-sizing principles were applied?
+            - How was complexity managed effectively?
+            
+            ✅ **Trajectory**: 
+            - How does this advance our compound learning goals?
+            - What patterns can be reused in future development?
+            - How does this build on previous learnings?
+
+            ## Learning Extraction Tasks
+
+            1. **Use the new `/capture_learning` command** to extract key insights:
+               - Run: `claude-code "/capture_learning pr-${{ github.event.pull_request.number }}"`
+               - Focus on reusable patterns and anti-patterns discovered
+               - Document both successful approaches and potential improvements
+
+            2. **Check if ADR updates are needed** using the new `/adr_check` command:
+               - Run: `claude-code "/adr_check"`
+               - Create ADRs for any architectural decisions made
+               - Link learnings to relevant ADRs with `/adr_link`
+
+            3. **Apply failure learning if issues were found**:
+               - If significant issues were discovered, use `/learn_from_failure`
+               - Transform potential issues into prevention strategies
+               - Update CLAUDE.md standards if needed
+
+            4. **Update Learning Indexes**:
+               - Categorize learnings appropriately
+               - Cross-reference with existing knowledge
+               - Update searchable indexes for future discovery
+
+            ## Context Window Optimization
+            Focus on extracting the most valuable learning patterns that will:
+            - Improve future code reviews
+            - Prevent similar issues from recurring  
+            - Enhance development velocity
+            - Build organizational knowledge capital
+
+            The goal is compound learning - every PR should make the next one better.
+
+            Post a summary of extracted learnings as a follow-up comment using `gh pr comment`.
+
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+      # Third: Process Learning Logs (Batch Processing)
+      - name: Process Accumulated Learning Logs
+        if: always() && (github.event.action == 'closed' && github.event.pull_request.merged == true)
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Since this PR was merged, process any accumulated learning logs to extract broader patterns:
+
+            ## Batch Learning Processing
+            
+            1. **Run learning log processing**:
+               - Execute: `claude-code "/process_learning_logs --feature-retrospective"`
+               - Analyze tool usage patterns from this development cycle
+               - Extract workflow optimizations and efficiency gains
+
+            2. **Update Development Standards**:
+               - Check if any patterns warrant CLAUDE.md updates
+               - Identify new best practices from successful approaches
+               - Document anti-patterns to avoid in future development
+
+            3. **Cross-Reference with ADRs**:
+               - Link any architectural insights to relevant ADRs
+               - Update effectiveness metrics for existing decisions
+               - Create new ADRs for emergent architectural patterns
+
+            4. **Generate Learning Summary**:
+               - Summarize key insights for team knowledge sharing
+               - Identify trends in development practices
+               - Recommend process improvements based on data
+
+            This meta-learning process ensures that individual PR insights compound into organizational knowledge.
+
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'

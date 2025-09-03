@@ -1,0 +1,54 @@
+name: Unlighthouse Report - Test
+
+on:
+  # Bei jedem Push
+  push:
+  # Manueller Trigger
+  workflow_dispatch:
+
+jobs:
+  generate-unlighthouse-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install -g @unlighthouse/cli puppeteer
+
+      - name: Run Unlighthouse
+        run: |
+          unlighthouse-ci --site https://www-test.venneker-gruppe.de/ --output-path ./unlighthouse-report
+
+      - name: Setup Git for GitHub Pages
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone report repository
+        uses: actions/checkout@v3
+        with:
+          repository: venneker-gruppe/www-test-reports
+          path: deploy-repo
+          token: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: Copy reports to deployment directory
+        run: |
+          mkdir -p deploy-repo/unlighthouse-reports/$(date +%Y-%m-%d)
+          cp -r unlighthouse-report/* deploy-repo/unlighthouse-reports/$(date +%Y-%m-%d)/
+          mkdir -p deploy-repo/unlighthouse-reports/latest
+          cp -r unlighthouse-report/* deploy-repo/unlighthouse-reports/latest/
+
+      - name: Commit and push reports
+        working-directory: deploy-repo
+        run: |
+          git add .
+          git commit -m "Update Unlighthouse report for www-test - $(date +%Y-%m-%d)"
+          git push

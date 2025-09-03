@@ -1,0 +1,180 @@
+name: Review Findings Processor
+
+on:
+  # Trigger when issues are found in other workflows
+  workflow_run:
+    workflows: [
+      "Main", 
+      "Prevention Rule Validation", 
+      "Claude Code Review",
+      "Claude Compound Code Review"
+    ]
+    types:
+      - completed
+    
+  # Also allow manual triggering for specific review processing
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process review findings for'
+        required: false
+        type: string
+      focus_area:
+        description: 'Focus area (security, performance, architecture, quality, testing)'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  id-token: write
+  actions: read
+
+jobs:
+  process-review-findings:
+    # Only run if the triggering workflow found issues or violations
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure') ||
+      (github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.name, 'Prevention'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git for Learning Capture
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action - Review Findings Processor"
+
+      - name: Get Workflow Details
+        id: workflow_info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              return {
+                workflowName: 'Manual Review Processing',
+                prNumber: '${{ github.event.inputs.pr_number }}',
+                focusArea: '${{ github.event.inputs.focus_area }}',
+                runUrl: 'Manual trigger'
+              };
+            } else {
+              return {
+                workflowName: '${{ github.event.workflow_run.name }}',
+                runUrl: '${{ github.event.workflow_run.html_url }}',
+                conclusion: '${{ github.event.workflow_run.conclusion }}',
+                headBranch: '${{ github.event.workflow_run.head_branch }}',
+                prNumber: '${{ github.event.workflow_run.pull_requests[0].number || "none" }}'
+              };
+            }
+
+      - name: Process Review Findings with Compound Learning
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Please process review findings from the workflow "${{ fromJSON(steps.workflow_info.outputs.result).workflowName }}" and transform them into compound learning:
+
+            ## Workflow Context
+            - **Source Workflow**: ${{ fromJSON(steps.workflow_info.outputs.result).workflowName }}
+            - **Run URL**: ${{ fromJSON(steps.workflow_info.outputs.result).runUrl }}
+            - **PR Number**: ${{ fromJSON(steps.workflow_info.outputs.result).prNumber }}
+            - **Conclusion**: ${{ fromJSON(steps.workflow_info.outputs.result).conclusion || 'Manual' }}
+
+            ## Review Findings Analysis Tasks
+
+            ### 1. Extract Systematic Patterns from Findings
+
+            **Analyze the source workflow results:**
+            - Review workflow logs and outputs for specific findings
+            - Identify patterns in issues, violations, or feedback discovered
+            - Categorize findings by type (security, performance, architecture, quality, testing)
+            - Extract root causes and systemic issues vs. one-off problems
+
+            ### 2. Transform Findings into Learnings
+
+            **For each significant finding category:**
+            - Use `/capture_learning review-findings-${{ github.run_id }}` to document:
+              - What the finding reveals about our current development patterns
+              - Why this type of issue occurs (root cause analysis)
+              - How to prevent similar issues in future development
+              - What improvements to our standards or processes are needed
+
+            ### 3. ADR Impact Assessment
+
+            **Check ADR requirements:**
+            - Use `/adr_check` to determine if findings indicate missing architectural decisions
+            - For architectural issues found, create ADRs documenting:
+              - The decision that should have been made to prevent the issue
+              - Guidelines for similar architectural choices in the future
+              - Standards that prevent the category of issue from recurring
+
+            ### 4. Prevention Rule Enhancement
+
+            **Update prevention strategies:**
+            - If findings reveal gaps in our prevention rules, document improvements needed
+            - Use `/learn_from_failure` to transform findings into prevention strategies
+            - Update CLAUDE.md with new standards if patterns suggest systematic improvements
+            - Create prevention rules that would catch similar issues automatically
+
+            ### 5. Knowledge Network Integration
+
+            **Connect findings to broader knowledge:**
+            - Use `/adr_link` to connect new learnings with relevant existing ADRs
+            - Cross-reference with previous similar findings in the learning database
+            - Update learning indexes and categorization for better discoverability
+            - Identify knowledge gaps that findings reveal
+
+            ## 4-Criteria Learning Framework
+
+            Apply our compound learning criteria to the findings:
+
+            ✅ **Correctness**: How can we prevent similar logical errors or bugs?
+            ✅ **Completeness**: What requirements or edge cases were missed?
+            ✅ **Size**: Were issues due to over/under-engineering? How to right-size better?
+            ✅ **Trajectory**: How do these findings help us build better compound learning?
+
+            ## Expected Outputs
+
+            1. **Systematic Learning Capture**: Document patterns and prevention strategies
+            2. **ADR Updates/Creation**: Address architectural gaps revealed by findings  
+            3. **Prevention Rule Enhancements**: Improve our ability to catch similar issues
+            4. **Knowledge Network Updates**: Better organize and connect related learnings
+            5. **Standards Updates**: Enhance CLAUDE.md with insights from findings
+
+            Focus on transforming review findings into systematic improvements that prevent similar issues and enhance our compound learning trajectory.
+
+          claude_args: '--allowed-tools "Read,Write,Edit,Glob,Grep,LS,Bash(gh:*),Bash(git:*),Task"'
+
+      - name: Commit Learning Improvements
+        if: always()
+        run: |
+          # Check if any learning improvements were made
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Review findings learning updates detected, committing..."
+            
+            git add -A
+            git commit -m "Process review findings: enhance compound learning
+
+            Transformed findings from ${{ fromJSON(steps.workflow_info.outputs.result).workflowName }} into systematic improvements:
+            - Captured learning patterns from review findings
+            - Updated prevention strategies based on discovered issues
+            - Enhanced ADR coverage for architectural gaps
+            - Improved knowledge network organization
+
+            Source: ${{ fromJSON(steps.workflow_info.outputs.result).runUrl }}
+            
+            🔍 Generated via Review Findings Processor
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
+            
+            git push || echo "Push failed - may need manual intervention"
+          else
+            echo "No learning improvements detected from review findings"
+          fi
