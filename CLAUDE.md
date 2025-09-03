@@ -73,3 +73,32 @@ When code examples, setup or configuration steps, or library/API documentation a
 - Update references to external docs
 - Maintain links between related rules
 - Document breaking changes
+
+## Compounding Engineering Practices
+
+### Learning Loop Integration
+- Every code review becomes a permanent lesson captured in project context
+- Failed tests generate new rules to prevent similar issues
+- AI agents learn from each interaction and apply lessons automatically
+- Documentation evolves continuously based on development patterns
+
+### Automated Improvement Workflow
+1. **Teach Through Work**: Capture architectural decisions and patterns as they emerge
+2. **Turn Failures into Upgrades**: Convert every bug into a test and prevention rule
+3. **Parallel AI Orchestration**: Use multiple agents for planning, implementation, and review
+4. **Lean Context**: Maintain focused, project-specific AI guidance
+5. **Trust but Verify**: Enable AI autonomy with validation checkpoints
+
+### Development Acceleration Principles
+- Systems create systems that get faster, safer, and better with each iteration
+- Each improvement compounds exponentially with previous improvements
+- Focus on designing systems that design systems
+- Maintain permanent institutional knowledge that survives team changes
+
+### Quality Assurance Evolution
+- Tests become smarter over time by learning from failures  
+- Code reviews feed patterns back into development standards
+- Performance monitoring automatically improves based on regression patterns
+- Security practices evolve based on discovered vulnerabilities
+
+Updated: $(date) - Compounding Engineering Integration
