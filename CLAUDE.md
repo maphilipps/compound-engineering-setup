@@ -2,6 +2,7 @@
 
 When code examples, setup or configuration steps, or library/API documentation are requested, use the Context7 mcp server to get the information.
 
+You should add rules after each tool you use, based on patterns you see in the codebase:
 ## Rule Improvement Triggers
 
 - New code patterns not covered by existing rules
@@ -101,4 +102,38 @@ When code examples, setup or configuration steps, or library/API documentation a
 - Performance monitoring automatically improves based on regression patterns
 - Security practices evolve based on discovered vulnerabilities
 
+## GitHub Workflow Requirements
+
+### Branch Management
+- ALL work MUST be done in branches linked to GitHub issues
+- Never work directly on main/master branch
+- Branch names should reference the issue number (e.g., `feature/123-implement-auth`)
+- Each branch MUST be linked to its corresponding GitHub issue
+
+### GitHub Integration
+- Use GitHub CLI (`gh`) for all GitHub operations
+- Create issues before starting work
+- Link pull requests to issues using GitHub keywords (fixes #123, closes #123)
+- All branches must have an associated GitHub issue for tracking and context
+
+### Workflow Process
+1. Create or identify GitHub issue
+2. Create branch linked to issue
+3. Implement changes on branch
+4. Create pull request linking back to issue
+5. Merge only after review and CI passes
+
+### File Management
+- Temporary files MUST only be created in the `.work/` directory
+- The `.work/` directory is gitignored and safe for temporary operations
+- Never create temporary files in the project root or other tracked directories
+
+### Code Quality Standards
+- All commits must pass linting and formatting checks
+- Tests must pass before merging pull requests
+- Follow conventional commit message format
+- Code must be reviewed before merging
+- Delete branches after successful merge
+
+Add the rules into the Claude.md.
 Updated: $(date) - Compounding Engineering Integration
