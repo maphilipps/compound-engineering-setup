@@ -6,8 +6,11 @@ Validate current changes against ADR requirements and suggest ADR creation when 
 
 When invoked (typically from pre-commit hook or CI):
 
-1. **Analyze Current Changes**:
+1. **Validate environment and analyze current changes**:
+   - Check if we're in a git repository
+   - Verify `.adrs/` directory exists (warn if missing, but continue)
    - Get current git diff: `git diff --cached --name-only`
+   - Handle case where no changes are staged gracefully
    - Analyze changed file patterns and types
    - Extract significant code changes and additions
    - Check for architectural or infrastructure changes

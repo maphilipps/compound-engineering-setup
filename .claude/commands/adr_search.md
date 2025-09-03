@@ -11,10 +11,13 @@ Search through all ADRs for specific terms or concepts.
 
 ## Implementation Steps
 
-1. **Parse search parameters**:
-   - Extract main search term (required)
-   - Extract optional status filter (`--status proposed|accepted|deprecated|superseded`)
-   - Extract optional section filter (`--section title|context|decision|consequences`)
+1. **Validate and parse search parameters**:
+   - Check if search term is provided
+   - If no search term provided, respond with usage instructions
+   - Sanitize search term to prevent command injection
+   - Extract main search term (required, 1-100 characters)
+   - Validate and extract optional status filter (`--status proposed|accepted|deprecated|superseded`)
+   - Validate and extract optional section filter (`--section title|context|decision|consequences`)
 
 2. **Scan and filter ADR files**:
    - List all ADR files in `.adrs/` directory (excluding template.md and README.md)

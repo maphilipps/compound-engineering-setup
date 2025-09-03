@@ -11,9 +11,13 @@ Optional status filter: `proposed`, `accepted`, `deprecated`, `superseded`
 
 ## Implementation Steps
 
-1. **Scan ADR directory**:
+1. **Validate input and scan ADR directory**:
+   - If status filter provided, validate it's one of: `proposed`, `accepted`, `deprecated`, `superseded`
+   - If invalid status provided, show error and available options
+   - Check if `.adrs/` directory exists, provide setup guidance if missing
    - List all `.md` files in `.adrs/` directory
    - Exclude `template.md` and `README.md`
+   - Handle empty directory gracefully
    - Sort files by ADR number (extracted from filename)
 
 2. **Parse ADR metadata**:

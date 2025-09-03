@@ -15,7 +15,10 @@ Examples:
 
 ## Implementation Steps
 
-1. **Parse ADR identifier**:
+1. **Validate input and parse ADR identifier**:
+   - Check if ADR number is provided
+   - If no number provided, respond with usage instructions and show available ADRs
+   - Validate number is numeric and within reasonable range (1-999)
    - Accept number with or without leading zeros (001, 01, 1)
    - Normalize to 3-digit format for file lookup
    - Handle both `ADR-XXX` and just `XXX` formats
