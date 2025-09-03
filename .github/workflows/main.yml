@@ -88,9 +88,21 @@ jobs:
             - Explain the "why" behind each recommendation
             - Suggest concrete improvements where needed
 
-            Use `gh pr comment` to post your detailed validation results as a comment on the PR, or provide a summary for push events.
+            ## Active Learning & ADR Integration
 
-          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*)"'
+            After completing your validation:
+
+            1. **Execute ADR Check**: Always run `/adr_check` to identify if changes require ADR documentation
+            
+            2. **Capture Validation Learnings**: Use `/capture_learning ai-validation-${{ github.run_id }}` for any significant patterns or issues found
+            
+            3. **Apply Failure Learning**: If validation reveals systemic issues, use `/learn_from_failure` to document prevention measures
+            
+            4. **Update Knowledge Links**: Use `/adr_link` to connect new insights with existing architectural decisions
+
+            Use `gh pr comment` to post your detailed validation results, then execute the learning capture actions above.
+
+          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*),Task"'
 
   ai-tests:
     runs-on: ubuntu-latest
@@ -141,6 +153,18 @@ jobs:
 
             Focus on practical, actionable testing recommendations that improve reliability and maintainability.
 
-            Use `gh pr comment` to post testing analysis results, or provide a summary for push events.
+            ## Testing Learning Integration
 
-          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*)"'
+            After completing your testing analysis:
+
+            1. **Check ADR Compliance**: Run `/adr_check` for any testing strategy changes that may require ADR updates
+            
+            2. **Document Testing Patterns**: Use `/capture_learning ai-testing-${{ github.run_id }}` for reusable testing insights and patterns
+            
+            3. **Learn from Test Gaps**: If significant testing gaps are found, use `/learn_from_failure` to prevent similar coverage issues
+            
+            4. **Link Testing Decisions**: Use `/adr_link` to connect testing insights with architectural decisions
+
+            Use `gh pr comment` to post testing analysis results, then execute the learning integration actions above.
+
+          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*),Task"'
