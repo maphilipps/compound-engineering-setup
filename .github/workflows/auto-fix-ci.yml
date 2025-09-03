@@ -89,7 +89,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            ## Auto-Fix CI Failures
+            ## Auto-Fix CI Failures with Compound Learning
 
             **Failed CI Run Details:**
             - Run URL: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
@@ -102,13 +102,36 @@ jobs:
             **Error Summary:**
             ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorSummary) }}
 
-            ## Your Task
+            ## 4-Criteria Auto-Fix Approach
 
-            1. **Analyze the CI failure** using the error details above
-            2. **Investigate the codebase** to understand the root cause
-            3. **Apply targeted fixes** to resolve the specific CI issues
-            4. **Test your fixes** where possible to validate the solution
-            5. **Commit the changes** with clear commit message explaining the fix
+            ✅ **Correctness**: Ensure fixes address root causes, not just symptoms
+            ✅ **Completeness**: Handle all failure scenarios and edge cases  
+            ✅ **Size**: Apply minimal, targeted fixes without over-engineering
+            ✅ **Trajectory**: Turn failures into learning opportunities for compound improvement
+
+            ## Your Enhanced Tasks
+
+            1. **Analyze with Compound Learning Context**:
+               - Review similar failures in learning logs (`thoughts/shared/learnings/`)
+               - Check if this failure type has been documented before
+               - Understand failure patterns that could prevent future occurrences
+
+            2. **Apply 4-Criteria Fixes**:
+               - **Correctness**: Fix the immediate issue with logical precision
+               - **Completeness**: Ensure the fix handles all related scenarios
+               - **Size**: Keep fixes minimal and focused
+               - **Trajectory**: Make fixes that teach the system to prevent similar issues
+
+            3. **Compound Learning Integration**:
+               - Use `/capture_learning` to document the failure pattern and solution
+               - Check if the fix requires ADR updates with `/adr_check`
+               - Link the learning to related architectural decisions
+               - Update prevention patterns to avoid similar failures
+
+            4. **Enhanced Testing & Validation**:
+               - Test fixes comprehensively to prevent regression
+               - Validate that fixes don't introduce new failure modes
+               - Ensure fixes integrate well with existing systems
 
             ## Focus Areas for Common CI Issues
 
