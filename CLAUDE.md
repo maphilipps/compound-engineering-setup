@@ -42,6 +42,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Context-first API design
 - Generate mocks with `make mocks` when needed
 
+## AI Evaluation Framework
+
+### Code Quality Checklist
+- [ ] Follows established patterns from codebase
+- [ ] Includes appropriate error handling
+- [ ] Has clear variable naming and structure
+- [ ] Integrates properly with existing architecture
+- [ ] Includes necessary tests and documentation
+
+### Decision Documentation Standards
+- Document WHY not just WHAT in all code changes
+- Capture alternatives considered and rejected
+- Note any compromises or tradeoffs made
+- Record lessons learned for future reference
+
+### Multi-Phase Review Process
+1. **Structural Review**: Architecture and patterns alignment
+2. **Implementation Review**: Code quality and correctness assessment
+3. **Integration Review**: System compatibility and dependencies
+4. **Learning Review**: Extractable insights for future development
+
+### Review Quality Gates
+- Each phase must pass before proceeding to next
+- Document findings and decisions at each gate
+- Use opponent processing for critical changes
+- Escalate complex decisions to ADR process
+
 ## Development Conventions
 
 ### TODO Annotations

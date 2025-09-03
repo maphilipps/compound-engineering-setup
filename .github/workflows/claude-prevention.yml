@@ -32,7 +32,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            @claude Please perform comprehensive prevention rule validation, optimizing for our 4 core criteria:
+            @claude Please perform basic prevention framework validation:
 
             ✅ **Correctness**: Are prevention rules catching logical errors effectively?
             ✅ **Completeness**: Do rules cover all requirement aspects thoroughly?
@@ -117,6 +117,24 @@ jobs:
             *Powered by compound engineering prevention system*
             ```
             
-            Perform complete validation now, including all outputs and PR commenting.
+            ## Active Prevention Learning
+
+            After completing prevention validation:
+
+            1. **Execute ADR Check**: Run `/adr_check` to identify if prevention violations indicate missing ADR documentation
             
-          claude_args: '--allowed-tools "Read,Grep,Write,Glob,Bash(git:*),Bash(gh pr:*),Bash(mkdir:*),Bash(date:*)" --files **/*.{js,ts,tsx,jsx,php,py,go,rs,java,rb,swift,kt} --exclude node_modules/** vendor/** dist/** build/**'
+            2. **Capture Prevention Patterns**: Use `/capture_learning prevention-${{ github.run_id }}` to document:
+               - New violation patterns discovered
+               - Effective prevention rules that worked well
+               - Gaps in current prevention coverage
+            
+            3. **Learn from Violations**: For any violations found, use `/learn_from_failure` to:
+               - Document why the prevention rule wasn't followed
+               - Create prevention strategies for similar issues
+               - Update CLAUDE.md standards if needed
+            
+            4. **Link Prevention Knowledge**: Use `/adr_link` to connect prevention insights with architectural decisions
+
+            Perform complete validation now, including all outputs, PR commenting, and learning capture.
+            
+          claude_args: '--allowed-tools "Read,Grep,Write,Glob,Bash(git:*),Bash(gh:*),Task" --files **/*.{js,ts,tsx,jsx,php,py,go,rs,java,rb,swift,kt,yml,yaml,md} --exclude node_modules/** vendor/** dist/** build/**'

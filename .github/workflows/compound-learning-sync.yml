@@ -1,0 +1,143 @@
+name: Compound Learning Sync
+
+on:
+  # Trigger after other AI workflows complete
+  workflow_run:
+    workflows: [
+      "Main", 
+      "Prevention Rule Validation", 
+      "Claude Code Review",
+      "Claude Compound Code Review", 
+      "Extract PR Learning Patterns",
+      "Auto Fix CI Failures"
+    ]
+    types:
+      - completed
+  
+  # Also allow manual triggering for cross-workflow learning sync
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: 'Type of sync (full, patterns, metrics, cross-reference)'
+        required: false
+        default: 'full'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  id-token: write
+  actions: read
+
+jobs:
+  compound-learning-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git for Learning Updates
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action - Compound Learning Sync"
+
+      - name: Cross-Workflow Learning Synthesis
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Please perform compound learning synthesis across all AI workflows, optimizing for our 4 core criteria:
+
+            ✅ **Correctness**: How well are our workflows catching and preventing errors?
+            ✅ **Completeness**: Are we capturing learnings from all development activities?
+            ✅ **Size**: Are our learning processes appropriately sized and efficient?
+            ✅ **Trajectory**: How effectively are we building compound knowledge over time?
+
+            ## Cross-Workflow Learning Synthesis
+
+            ### 1. Workflow Performance Analysis
+            
+            **Analyze Recent Workflow Results:**
+            - Review recent runs of Main, Prevention, Code Review workflows
+            - Identify patterns in successes and failures across workflows
+            - Extract insights about workflow effectiveness and improvement opportunities
+            - Measure 4-criteria progress across different types of activities
+
+            ### 2. Learning Pattern Consolidation
+            
+            **Consolidate Learning Patterns:**
+            - Review all learning documents in `thoughts/shared/learnings/`
+            - Identify common patterns across different workflows and PRs
+            - Merge or cross-reference related learnings for better knowledge organization
+            - Update indexes and categorization for improved discoverability
+
+            ### 3. Cross-Workflow Optimization
+            
+            **Optimize Workflow Interactions:**
+            - Identify redundancies or gaps between different AI workflows
+            - Recommend workflow trigger optimizations for better compound effect
+            - Suggest improvements to workflow prompts based on learning patterns
+            - Enhance cross-workflow knowledge sharing and reference
+
+            ### 4. Compound Metrics & Reporting
+            
+            **Generate Compound Learning Metrics:**
+            - Calculate workflow effectiveness trends over time
+            - Measure learning capture and application rates
+            - Assess 4-criteria improvement across different types of work
+            - Identify high-impact learning patterns for prioritization
+
+            ### 5. Knowledge Network Enhancement
+            
+            **Enhance Knowledge Connections:**
+            - Update ADR-learning cross-references based on recent activities
+            - Identify opportunities for better knowledge linking and discovery
+            - Suggest new learning categories or organizational improvements
+            - Recommend proactive learning capture for upcoming development areas
+
+            ## Synthesis Tasks
+
+            1. **Use `/process_learning_logs`** to analyze accumulated workflow patterns
+            2. **Update learning indexes** with new cross-references and connections
+            3. **Generate summary report** of cross-workflow compound learning progress
+            4. **Recommend workflow optimizations** based on synthesis findings
+            5. **Update CLAUDE.md** if new compound learning patterns emerge
+
+            ## Output Requirements
+
+            - Provide actionable insights for improving compound learning across workflows
+            - Generate specific recommendations for workflow enhancements
+            - Update knowledge organization for better cross-workflow learning
+            - Create metrics showing compound learning progress and trajectory
+
+            Focus on practical improvements that enhance the compound effect across all AI-powered development activities.
+
+          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,LS,Bash(gh:*),Bash(git:*),TodoWrite,Task"'
+
+      - name: Commit Learning Sync Updates
+        if: always()
+        run: |
+          # Check if any changes were made
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Learning sync updates detected, committing..."
+            
+            git add -A
+            git commit -m "Compound learning sync: cross-workflow optimization
+
+            - Updated learning indexes and cross-references
+            - Consolidated patterns from multiple AI workflows
+            - Enhanced knowledge network connections
+            - Improved compound learning trajectory
+
+            🧠 Generated via Compound Learning Sync
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
+            
+            git push || echo "Push failed - may need manual intervention"
+          else
+            echo "No learning sync updates detected"
+          fi

@@ -8,240 +8,163 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  # todo needs check-ts and test-ts too!
-  checks:
+  ai-rule-validation:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    
     steps:
-      - name: Check out
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: AI-Based Rule Validation
+        uses: anthropics/claude-code-action@v1
         with:
-          node-version: 22
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Please perform comprehensive AI-based rule validation for this repository, focusing on our 4 core criteria:
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+            ✅ **Correctness**: Are the changes logically sound and error-free?
+            ✅ **Completeness**: Do the changes fully address all requirements?
+            ✅ **Size**: Is the solution appropriately sized (not over/under-engineered)?
+            ✅ **Trajectory**: Do the changes advance our compound learning goals?
 
-      - uses: actions/setup-go@v5
-        id: setup-go
-        with:
-          go-version: '1.24'
-          cache: false
+            ## AI Rule Validation Tasks
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: go-mod-v2-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-mod-v2-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-
+            1. **Analyze All Changes** in this PR/push:
+               - Review code modifications for logical correctness
+               - Check that new features are completely implemented
+               - Validate that changes follow established patterns
+               - Assess if changes build on previous learnings
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
+            2. **Apply AI Development Standards** from CLAUDE.md:
+               - Verify adherence to established coding patterns
+               - Check error handling completeness
+               - Validate variable naming and code structure
+               - Ensure proper integration with existing architecture
 
-      - name: "Set up Python"
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: "pyproject.toml"
+            3. **Validate Configuration Changes**:
+               - Check Claude Code agents and commands for correctness
+               - Verify ADR structure and content quality
+               - Validate workflow configurations and logic
+               - Ensure learning capture systems are properly configured
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.83.0
-        with:
-          components: rustfmt,clippy
+            4. **4-Criteria Assessment**:
+               - **Correctness**: Flag any logical errors, syntax issues, or broken patterns
+               - **Completeness**: Identify missing implementations, incomplete features
+               - **Size**: Call out over-engineering or insufficient implementation
+               - **Trajectory**: Assess how changes contribute to compound learning
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: humanlayer-wui/src-tauri
+            ## Validation Categories
 
-      - name: Cache and install Tauri system dependencies
-        if: runner.os == 'Linux'
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
-          version: 1.0
+            ### Code Quality
+            - Naming conventions and clarity
+            - Error handling patterns
+            - Code organization and structure
+            - Documentation completeness
 
-      - name: Cache Go tools
-        uses: actions/cache@v4
-        id: go-tools-cache
-        with:
-          path: ~/go/bin
-          key: go-tools-v4-${{ runner.os }}-go1.24-golangci-2.1.6-mockgen-0.5.2
+            ### Architecture Compliance
+            - Adherence to established patterns
+            - Proper separation of concerns
+            - Integration with existing systems
+            - Future maintainability
 
-      - name: Install Go tools
-        if: steps.go-tools-cache.outputs.cache-hit != 'true'
-        run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-          go install go.uber.org/mock/mockgen@v0.5.2
+            ### Learning Integration
+            - Use of established learning patterns
+            - Contribution to knowledge capture
+            - Alignment with ADR decisions
+            - Enhancement of development workflows
 
-      - name: Cache Rust tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+            ## Output Requirements
 
-      - name: Run repository setup
-        run: make setup-ci
-        env:
-          CI: true
+            - Provide specific, actionable feedback
+            - Reference exact file locations and line numbers
+            - Explain the "why" behind each recommendation
+            - Suggest concrete improvements where needed
 
-      - name: Run checks
-        run: make check
+            ## Active Learning & ADR Integration
 
-  tests:
+            After completing your validation:
+
+            1. **Execute ADR Check**: Always run `/adr_check` to identify if changes require ADR documentation
+            
+            2. **Capture Validation Learnings**: Use `/capture_learning ai-validation-${{ github.run_id }}` for any significant patterns or issues found
+            
+            3. **Apply Failure Learning**: If validation reveals systemic issues, use `/learn_from_failure` to document prevention measures
+            
+            4. **Update Knowledge Links**: Use `/adr_link` to connect new insights with existing architectural decisions
+
+            Use `gh pr comment` to post your detailed validation results, then execute the learning capture actions above.
+
+          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*),Task"'
+
+  ai-tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-      fail-fast: false
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    
     steps:
-      - name: Check out
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          fetch-depth: 0
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
+      - name: AI-Based Testing Analysis
+        uses: anthropics/claude-code-action@v1
         with:
-          bun-version: latest
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            @claude Please perform AI-based testing analysis for this repository:
 
-      - uses: actions/setup-go@v5
-        id: setup-go
-        with:
-          go-version: '1.24'
-          cache: false
+            ## Testing Analysis Tasks
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: go-mod-v2-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-mod-v2-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-
+            1. **Analyze Test Coverage**:
+               - Review existing tests for completeness
+               - Identify missing test scenarios
+               - Check edge cases and error conditions
+               - Validate test quality and maintainability
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
+            2. **Configuration Testing**:
+               - Verify Claude Code configurations are valid
+               - Test workflow logic and triggers
+               - Validate agent and command structures
+               - Check ADR template and format compliance
 
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+            3. **Integration Testing**:
+               - Verify workflows integrate properly
+               - Check cross-component dependencies
+               - Validate learning capture mechanisms
+               - Test auto-fix and review processes
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+            4. **Quality Assessment**:
+               - Evaluate test maintainability
+               - Check for test anti-patterns
+               - Assess coverage gaps
+               - Recommend testing improvements
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: humanlayer-wui/src-tauri
+            Focus on practical, actionable testing recommendations that improve reliability and maintainability.
 
-      - name: Cache and install Tauri system dependencies
-        if: runner.os == 'Linux'
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
-          version: 1.0
+            ## Testing Learning Integration
 
-      - name: Cache Go tools
-        uses: actions/cache@v4
-        id: go-tools-cache-tests
-        with:
-          path: ~/go/bin
-          key: go-tools-v4-${{ runner.os }}-go1.24-mockgen-0.5.2
+            After completing your testing analysis:
 
-      - name: Install mockgen
-        if: steps.go-tools-cache-tests.outputs.cache-hit != 'true'
-        run: go install go.uber.org/mock/mockgen@v0.5.2
+            1. **Check ADR Compliance**: Run `/adr_check` for any testing strategy changes that may require ADR updates
+            
+            2. **Document Testing Patterns**: Use `/capture_learning ai-testing-${{ github.run_id }}` for reusable testing insights and patterns
+            
+            3. **Learn from Test Gaps**: If significant testing gaps are found, use `/learn_from_failure` to prevent similar coverage issues
+            
+            4. **Link Testing Decisions**: Use `/adr_link` to connect testing insights with architectural decisions
 
-      - name: Cache Rust tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+            Use `gh pr comment` to post testing analysis results, then execute the learning integration actions above.
 
-      - name: Run repository setup
-        run: make setup-ci
-        env:
-          CI: true
-
-      - name: Test
-        run: make test
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results-${{ matrix.python-version }}
-          path: |
-            junit.xml
-            coverage.xml
-
-  # for now leaving these commented out as they weren't passing (tsup or something was a related bug, want this merged more than I want in CI (Do we even want it
-  # in CI anyway?
-  # e2e-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Check out
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.21'
-  #
-  #     - name: Install Bun
-  #       uses: oven-sh/setup-bun@v2
-  #       with:
-  #         bun-version: latest
-  #
-  #     - name: Install Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #
-  #     - name: Build binaries
-  #       run: |
-  #         make -C hld build
-  #         make -C hlyr build
-  #
-  #     - name: Build TypeScript SDK
-  #       run: |
-  #         cd hld/sdk/typescript
-  #         bun install
-  #         bun run build
-  #
-  #     - name: Run E2E tests
-  #       env:
-  #         CI: true
-  #         HUMANLAYER_TEST_TIMEOUT_MULTIPLIER: 2
-  #       run: make -C hld e2e-test
-  #
-  #     - name: Upload test artifacts on failure
-  #       if: failure()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: e2e-test-artifacts-${{ github.run_id }}
-  #         path: /tmp/hld-e2e-*/
+          claude_args: '--allowed-tools "Read,Glob,Grep,LS,Bash(gh:*),Bash(git:*),Task"'

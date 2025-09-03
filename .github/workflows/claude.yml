@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run Claude Code
+      - name: Run Claude Code with Compound Learning
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
@@ -40,11 +40,34 @@ jobs:
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          # Enhanced prompt for compound learning integration
+          prompt: |
+            @claude Please address the user's request while applying our 4-criteria compound learning approach:
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
-          # claude_args: '--model claude-opus-4-1-20250805 --allowed-tools Bash(gh pr:*)'
+            ✅ **Correctness**: Ensure your solution is logically sound and error-free
+            ✅ **Completeness**: Address all aspects of the user's request thoroughly  
+            ✅ **Size**: Provide appropriately sized solutions (not over/under-engineered)
+            ✅ **Trajectory**: Contribute to compound learning and knowledge building
+
+            ## Compound Learning Integration
+
+            When responding to the user's @claude request:
+
+            1. **Apply Learning Standards**: Use established patterns from CLAUDE.md and ADRs
+            2. **Consider Previous Context**: Reference related learnings and decisions where relevant
+            3. **Document Insights**: If your work generates reusable patterns, consider using `/capture_learning`
+            4. **Check ADR Compliance**: Use `/adr_check` if making architectural changes
+            5. **Link Knowledge**: Use `/adr_link` to connect new insights with existing decisions
+
+            ## 4-Criteria Response Framework
+
+            - **Correctness**: Validate your approach against established best practices
+            - **Completeness**: Ensure you've addressed all implicit and explicit requirements
+            - **Size**: Choose the right level of detail and complexity for the request
+            - **Trajectory**: Explain how your response builds on or contributes to our compound learning
+
+            Now please respond to the user's original request with this enhanced context.
+
+          # Enable compound learning tools
+          claude_args: '--allowed-tools "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(gh:*),Bash(git:*),TodoWrite,Task"'
 
