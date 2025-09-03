@@ -15,23 +15,28 @@ Create a new ADR (Architectural Decision Record) in the `.adrs/` directory with 
    - Validate title length (must be between 1-80 characters)
    - Sanitize title to prevent path injection (remove ../, special characters)
 
-2. **Find the next ADR number**:
-   - List existing ADR files in `.adrs/` directory
-   - Extract numbers from filenames (adr-XXX-*.md)
-   - Find the highest number and increment by 1
+2. **Ensure ADR system is initialized**:
+   - Check if `.adrs/` directory exists
+   - If missing, automatically create directory and template file
+   - Ensure `template.md` exists (copy from system template if missing)
 
-3. **Create the new ADR file**:
+3. **Find the next ADR number**:
+   - List existing ADR files in `.adrs/` directory  
+   - Extract numbers from filenames (adr-XXX-*.md)
+   - Find the highest number and increment by 1 (start at 001 if none exist)
+
+4. **Create the new ADR file**:
    - Use filename format: `adr-XXX-title-slug.md` (where XXX is zero-padded 3-digit number)
    - Convert title to URL slug (lowercase, hyphens for spaces, remove special chars)
 
-4. **Populate the ADR template**:
+5. **Populate the ADR template**:
    - Read `.adrs/template.md` 
    - Replace `XXX` placeholder with the new ADR number
    - Replace `[Decision Title]` with the provided title
    - Set status to "Proposed"
    - Add creation date and author information
 
-5. **Create and open the file**:
+6. **Create and open the file**:
    - Write the populated template to the new ADR file
    - Inform user of the created file path
    - Ask if they want to edit the ADR immediately
@@ -50,10 +55,11 @@ Output: `.adrs/adr-002-choose-database-technology.md`
 
 ## Error Handling
 
-- If `.adrs/` directory doesn't exist, inform user to run ADR system initialization first
-- If no title provided, prompt for title
-- If title is too long (>80 chars), suggest shortening it
-- If similar ADR already exists, list similar titles for reference
+- **Missing ADR system**: Automatically create `.adrs/` directory and `template.md` if they don't exist
+- **No title provided**: Prompt for title with usage instructions
+- **Title too long**: Suggest shortening if >80 characters
+- **Similar ADR exists**: List similar titles for reference
+- **Permission issues**: Provide clear guidance on fixing directory permissions
 
 ## Follow-up Actions
 

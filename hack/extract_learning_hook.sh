@@ -9,11 +9,24 @@ if [ "${CLAUDE_LEARNING_EXTRACTION:-}" = "true" ]; then
     exit 0
 fi
 
-# Get tool information from environment variables with sanitization
-TOOL_NAME="${CLAUDE_TOOL_NAME:-unknown}"
-# Sanitize tool result and input to prevent injection, limit length
-TOOL_RESULT="$(printf '%s' "${CLAUDE_TOOL_RESULT:-}" | tr -d '\0' | head -c 200)"
-TOOL_INPUT="$(printf '%s' "${CLAUDE_TOOL_INPUT:-}" | tr -d '\0' | head -c 200)"
+# Read JSON input from stdin (Claude Code hook format)
+if ! JSON_INPUT=$(cat); then
+    exit 0  # Exit gracefully if no input
+fi
+
+# Check if we have jq available for JSON parsing
+if ! command -v jq >/dev/null 2>&1; then
+    # Fallback: simple extraction without jq (less reliable but functional)
+    TOOL_NAME=$(echo "$JSON_INPUT" | grep -o '"tool_name":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+    TOOL_INPUT=$(echo "$JSON_INPUT" | grep -o '"tool_input":"[^"]*"' | cut -d'"' -f4 | head -c 200 || echo "")
+    TOOL_RESULT=$(echo "$JSON_INPUT" | grep -o '"tool_response":"[^"]*"' | cut -d'"' -f4 | head -c 200 || echo "")
+else
+    # Parse JSON using jq with sanitization
+    TOOL_NAME=$(echo "$JSON_INPUT" | jq -r '.tool_name // "unknown"')
+    # Sanitize tool result and input to prevent injection, limit length
+    TOOL_INPUT=$(echo "$JSON_INPUT" | jq -r '.tool_input // ""' | tr -d '\0' | head -c 200)
+    TOOL_RESULT=$(echo "$JSON_INPUT" | jq -r '.tool_response // ""' | tr -d '\0' | head -c 200)
+fi
 
 # Only extract learnings from significant tools
 case "$TOOL_NAME" in

@@ -11,12 +11,13 @@ Optional status filter: `proposed`, `accepted`, `deprecated`, `superseded`
 
 ## Implementation Steps
 
-1. **Validate input and scan ADR directory**:
+1. **Validate input and ensure ADR system exists**:
    - If status filter provided, validate it's one of: `proposed`, `accepted`, `deprecated`, `superseded`
    - If invalid status provided, show error and available options
-   - Check if `.adrs/` directory exists, provide setup guidance if missing
+   - Check if `.adrs/` directory exists, automatically create if missing
+   - Ensure basic ADR structure is in place (template.md, README.md)
    - List all `.md` files in `.adrs/` directory
-   - Exclude `template.md` and `README.md`
+   - Exclude `template.md` and `README.md` from listing
    - Handle empty directory gracefully
    - Sort files by ADR number (extracted from filename)
 
@@ -57,10 +58,11 @@ ADR-002: Choose Database Technology              [Proposed]    .adrs/adr-002-cho
 - ⬆️ **Superseded**: Blue with reference to superseding ADR
 
 ## Error Handling
-- If `.adrs/` directory doesn't exist, show initialization message
-- If no ADRs found, show friendly "no ADRs yet" message
-- If invalid status filter provided, show available options
-- Handle malformed ADR files gracefully
+- **Missing ADR system**: Automatically create `.adrs/` directory structure if missing
+- **No ADRs found**: Show friendly "no ADRs yet" message with suggestion to create first ADR
+- **Invalid status filter**: Show available options (`proposed`, `accepted`, `deprecated`, `superseded`)
+- **Malformed ADRs**: Handle parsing errors gracefully, show file path for manual inspection
+- **Permission issues**: Provide clear guidance on fixing directory access
 
 ## Follow-up Actions
 After displaying the list:
