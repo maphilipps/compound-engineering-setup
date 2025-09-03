@@ -1,102 +1,75 @@
-# CLAUDE.md
+## Look up documentation with Context7
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+When code examples, setup or configuration steps, or library/API documentation are requested, use the Context7 mcp server to get the information.
 
-## Development Commands
+## Rule Improvement Triggers
 
-### Quick Actions
-- `make setup` - Resolve dependencies and installation issues across the monorepo
-- `make check-test` - Run all checks and tests
-- `make check` - Run linting and type checking
-- `make test` - Run all test suites
+- New code patterns not covered by existing rules
+- Repeated similar implementations across files
+- Common error patterns that could be prevented
+- New libraries or tools being used consistently
+- Emerging best practices in the codebase
 
-### Python Development
-- Uses `uv` exclusively - never use pip directly
-- Tests are co-located with source as `*_test.py` files
-- Commands: `uv sync`, `make check-py`, `make test-py`
+# Analysis Process:
+- Compare new code with existing rules
+- Identify patterns that should be standardized
+- Look for references to external documentation
+- Check for consistent error handling patterns
+- Monitor test patterns and coverage
 
-### TypeScript Development
-- Package managers vary - check `package.json` for npm or bun
-- Build/test commands differ - check `package.json` scripts section
-- Some use Jest, others Vitest, check `package.json` devDependencies
+# Rule Updates:
 
-### Go Development
-- Check `go.mod` for Go version (varies between 1.21 and 1.24)
-- Check if directory has a `Makefile` for available commands
-- Integration tests only in some projects (look for `-tags=integration`)
+- **Add New Rules When:**
+    - A new technology/pattern is used in 3+ files
+    - Common bugs could be prevented by a rule
+    - Code reviews repeatedly mention the same feedback
+    - New security or performance patterns emerge
 
-## Technical Guidelines
+- **Modify Existing Rules When:**
+    - Better examples exist in the codebase
+    - Additional edge cases are discovered
+    - Related rules have been updated
+    - Implementation details have changed
 
-### Python
-- Strict type hints (mypy strict mode)
-- Async/await patterns where established
-- Follow existing code style
+- **Example Pattern Recognition:**
 
-### TypeScript
-- Modern ES6+ features
-- Strict TypeScript configuration
-- Maintain CommonJS/ESM compatibility
+  ```typescript
+  // If you see repeated patterns like:
+  const data = await prisma.user.findMany({
+    select: { id: true, email: true },
+    where: { status: 'ACTIVE' }
+  });
 
-### Go
-- Standard Go idioms
-- Context-first API design
-- Generate mocks with `make mocks` when needed
+  // Consider adding to [prisma.mdc](mdc:shipixen/.cursor/rules/prisma.mdc):
+  // - Standard select fields
+  // - Common where conditions
+  // - Performance optimization patterns
+  ```
 
-## AI Evaluation Framework
+- **Rule Quality Checks:**
+- Rules should be actionable and specific
+- Examples should come from actual code
+- References should be up to date
+- Patterns should be consistently enforced
 
-### 4-Criteria Compound Learning Optimization
-*Last synthesis: September 3, 2025*
+## Continuous Improvement:
 
-✅ **Correctness**: Ensure logical soundness and error prevention
-✅ **Completeness**: Address all requirements thoroughly  
-✅ **Size**: Provide appropriately sized solutions (not over/under-engineered)
-✅ **Trajectory**: Contribute to compound learning and knowledge building
+- Monitor code review comments
+- Track common development questions
+- Update rules after major refactors
+- Add links to relevant documentation
+- Cross-reference related rules
 
-#### Compound Workflow Success Pattern
-- **Key Finding**: Workflows with compound learning integration show 100% success rates vs 0-43% for basic workflows
-- **Application**: Always include learning capture commands (`/capture_learning`, `/learn_from_failure`, `/adr_check`) in AI workflows
-- **Evidence**: Claude Compound Code Review (100% success) vs Claude Code Review (43% success)
+## Rule Deprecation
 
-### Code Quality Checklist
-- [ ] Follows established patterns from codebase
-- [ ] Includes appropriate error handling
-- [ ] Has clear variable naming and structure
-- [ ] Integrates properly with existing architecture
-- [ ] Includes necessary tests and documentation
-- [ ] **Uses learning capture commands when appropriate**
-- [ ] **References existing learnings and ADRs when relevant**
+- Mark outdated patterns as deprecated
+- Remove rules that no longer apply
+- Update references to deprecated rules
+- Document migration paths for old patterns
 
-### Decision Documentation Standards
-- Document WHY not just WHAT in all code changes
-- Capture alternatives considered and rejected
-- Note any compromises or tradeoffs made
-- Record lessons learned for future reference
+## Documentation Updates:
 
-### Multi-Phase Review Process
-1. **Structural Review**: Architecture and patterns alignment
-2. **Implementation Review**: Code quality and correctness assessment
-3. **Integration Review**: System compatibility and dependencies
-4. **Learning Review**: Extractable insights for future development
-
-### Review Quality Gates
-- Each phase must pass before proceeding to next
-- Document findings and decisions at each gate
-- Use opponent processing for critical changes
-- Escalate complex decisions to ADR process
-
-## Development Conventions
-
-### TODO Annotations
-
-We use a priority-based TODO annotation system throughout the codebase:
-
-- `TODO(0)`: Critical - never merge
-- `TODO(1)`: High - architectural flaws, major bugs
-- `TODO(2)`: Medium - minor bugs, missing features
-- `TODO(3)`: Low - polish, tests, documentation
-- `TODO(4)`: Questions/investigations needed
-- `PERF`: Performance optimization opportunities
-
-## Additional Resources
-- Check `examples/` for integration patterns
-- Consult `docs/` for user-facing documentation
+- Keep examples synchronized with code
+- Update references to external docs
+- Maintain links between related rules
+- Document breaking changes
